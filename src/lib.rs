@@ -1,3 +1,5 @@
+//! Different generic Circular Buffer variants
+
 pub mod discoid;
 
 pub struct CircularBuffer<T> {
