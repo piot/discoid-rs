@@ -6,26 +6,17 @@ pub struct DiscoidBuffer<T> {
 
 /// A circular buffer that efficiently handles elements of small and non-complex types.
 ///
-/// This buffer is designed to operate on types `T` that implement the `Copy` trait, which allows for
-/// an efficient and safe handling of simple scalar values or small structs. Using `Copy` ensures that
-/// elements can be duplicated simply by copying bits without the need for complex cloning operations.
-/// This design choice is optimal for scenarios where performance and memory efficiency are critical,
-/// and the elements do not manage resources or require complex duplication logic.
-///
 /// The buffer automatically wraps around at its ends, providing a continuous view of the data even as
 /// elements are added or removed, making it ideal for use cases like audio processing, real-time data
 /// sampling, or any situation where a fixed-capacity queue is beneficial.
 ///
 /// # Type Parameter
 ///
-/// * `T` - The type of elements stored in the buffer. Must implement the `Copy` trait to ensure
-///   that elements can be easily and safely duplicated with no additional overhead typical of more
-///   complex data types.
+/// * `T` - The type of elements stored in the buffer.
 ///
 /// # Examples
 ///
-/// Here is how you might initialize and use a `DiscoidBuffer` with a simple integer type, which
-/// implements `Copy`:
+/// Here is how you might initialize and use a `DiscoidBuffer` with a simple integer type:
 ///
 /// ```rust
 /// use discoid::discoid::DiscoidBuffer;
@@ -34,7 +25,7 @@ pub struct DiscoidBuffer<T> {
 /// buffer.set_at_index(0, 42);             // Set the first element to 42.
 /// buffer.set_at_index(1, 35);             // Set the second element to 35.
 ///
-/// if let Some(value) = buffer.get_at_index(0) {
+/// if let Some(value) = buffer.get_ref_at_index(0) {
 ///     println!("The first element is {}", value);
 /// }
 /// ```
@@ -43,7 +34,7 @@ pub struct DiscoidBuffer<T> {
 ///
 /// - `set_at_index` will panic if an index is provided that exceeds the buffer's current capacity.
 ///
-impl<T: Copy> DiscoidBuffer<T> {
+impl<T> DiscoidBuffer<T> {
     pub fn new(size: usize) -> Self {
         Self {
             buffer: (0..size).map(|_| None).collect(),
@@ -70,16 +61,6 @@ impl<T: Copy> DiscoidBuffer<T> {
 
         let absolute_index = (self.front + index) % buffer_len;
         self.buffer[absolute_index].as_ref()
-    }
-
-    pub fn get_at_index(&self, index: usize) -> Option<T> {
-        let buffer_len = self.capacity;
-        if index >= buffer_len {
-            return None;
-        }
-
-        let absolute_index = (self.front + index) % buffer_len;
-        self.buffer[absolute_index]
     }
 
     pub fn discard_front(&mut self, count: usize) {
@@ -112,7 +93,7 @@ impl<T: Copy> DiscoidBuffer<T> {
 mod discoid_tests {
     use super::*;
 
-    #[derive(Debug, PartialEq, Copy, Clone)]
+    #[derive(Debug, PartialEq)]
     pub struct Item {
         pub x: i32,
         pub boolean: bool,
@@ -127,28 +108,36 @@ mod discoid_tests {
             x: 23,
             boolean: false,
         };
-        discoid_buffer.set_at_index(0, first_item.clone());
+
+        let expected_item = Item {
+            x: 23,
+            boolean: false,
+        };
+        discoid_buffer.set_at_index(0, first_item);
 
         assert_eq!(discoid_buffer.get_bits_representation(), 1);
 
         assert_eq!(
             discoid_buffer.get_ref_at_index(0),
-            Some(first_item.clone()).as_ref()
+            Some(expected_item).as_ref()
         );
-        assert_eq!(discoid_buffer.get_at_index(1), None);
+        assert_eq!(discoid_buffer.get_ref_at_index(1), None);
 
         let middle_item = Item {
             x: 99,
             boolean: true,
         };
-        discoid_buffer.set_at_index(3, middle_item.clone());
+        discoid_buffer.set_at_index(3, middle_item);
 
         assert_eq!(discoid_buffer.get_bits_representation(), 0b1001);
 
         assert_eq!(discoid_buffer.get_ref_at_index(1), None);
 
-        assert_eq!(discoid_buffer.get_ref_at_index(3), Some(&middle_item));
-        assert_eq!(discoid_buffer.get_at_index(3), Some(middle_item));
+        let expected_middle_item = Item {
+            x: 99,
+            boolean: true,
+        };
+        assert_eq!(discoid_buffer.get_ref_at_index(3), Some(&expected_middle_item));
 
         assert_eq!(discoid_buffer.get_ref_at_index(7), None);
     }

@@ -54,7 +54,7 @@ impl<T> CircularBuffer<T> {
         next_rear == self.front
     }
 
-    pub fn get_at_index(&self, index: usize) -> Option<&T> {
+    pub fn get_ref_at_index(&self, index: usize) -> Option<&T> {
         let buffer_len = self.capacity;
         if index >= buffer_len {
             return None;
@@ -99,16 +99,16 @@ mod tests {
         assert_eq!(circular_buffer.len(), 1);
 
         assert_eq!(
-            circular_buffer.get_at_index(0),
+            circular_buffer.get_ref_at_index(0),
             Some(first_item.clone()).as_ref()
         );
-        assert_eq!(circular_buffer.get_at_index(1), None);
+        assert_eq!(circular_buffer.get_ref_at_index(1), None);
 
         let popped_item = circular_buffer.pop(); // front is increased
         assert_eq!(popped_item.unwrap(), first_item);
 
-        assert_eq!(circular_buffer.get_at_index(1), None);
+        assert_eq!(circular_buffer.get_ref_at_index(1), None);
 
-        assert_eq!(circular_buffer.get_at_index(7), None);
+        assert_eq!(circular_buffer.get_ref_at_index(7), None);
     }
 }
